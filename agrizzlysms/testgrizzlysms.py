@@ -20,7 +20,8 @@ async def testAsyncGrizzlySms(apiKey: str):
 
     await testApi('getBalance', agrizzlysms.getBalance())
     await testApi('getPrices', agrizzlysms.getPrices('mm','0'))
-    number = await testApi('getNumber', agrizzlysms.getNumber('mm','0'))
+    cc = agrizzlysms.getCountryCode('RU')
+    number = await testApi('getNumber', agrizzlysms.getNumber('mm',cc))
     if number:
         print(number)    
         await testApi('getSMS', agrizzlysms.getSMS(number['id']))
