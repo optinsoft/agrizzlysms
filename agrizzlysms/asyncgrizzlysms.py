@@ -119,7 +119,7 @@ class AsyncGrizzlySms:
         return {"response": 1, "id": respList[1], "number": respList[2]}
 
     async def setStatus(self, status: str, id: str):
-        url = self.apiUrl + '?' + urlencode({'action':'setStatus','status':status,'id:':id,'api_key':self.apiKey})
+        url = self.apiUrl + '?' + urlencode({'action':'setStatus','status':status,'id':id,'api_key':self.apiKey})
         respList = await self.doListRequest(url)
         return {"response": 1, "text": ":".join(respList)}
     
