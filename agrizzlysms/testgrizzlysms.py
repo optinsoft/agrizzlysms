@@ -25,5 +25,6 @@ async def testAsyncGrizzlySms(apiKey: str):
     if number:
         print(number)    
         await testApi('getSMS', agrizzlysms.getSMS(number['id']))
+        await testApi('setStatus', agrizzlysms.setStatus('8', number['id']))
 
     print('--- agrizzlysms test completed ---')
