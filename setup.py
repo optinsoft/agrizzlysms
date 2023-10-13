@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='agrizzlysms',
-    version='1.2',
+    version='1.3',
     description='Async API wrapper for grizzlysms',
     install_requires=["aiohttp","certifi"],
     author='optinsoft',

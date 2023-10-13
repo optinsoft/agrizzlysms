@@ -10,6 +10,9 @@ class AsyncGrizzlySmsException(Exception):
 class NoSMSException(AsyncGrizzlySmsException):
     pass
 
+class EarlyCancelException(AsyncGrizzlySmsException):
+    pass
+
 class AsyncGrizzlySms:
     def __init__(self, apiKey: str, apiUrl: str = 'https://api.grizzlysms.com/stubs/handler_api.php'):
         self.apiKey = apiKey
@@ -73,11 +76,15 @@ class AsyncGrizzlySms:
                     if not code.startswith(successCode):
                         if len(noSmsCode) > 0 and code == noSmsCode:
                             raise NoSMSException("No SMS")
+                        if "EARLY_CANCEL_DENIED" == code:
+                            raise EarlyCancelException("Yearly cancel denied")
                         raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')
                 else:
                     if code != successCode:
                         if len(noSmsCode) > 0 and code == noSmsCode:
                             raise NoSMSException("No SMS")
+                        if "EARLY_CANCEL_DENIED" == code:
+                            raise EarlyCancelException("Yearly cancel denied")
                         raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')
             else:
                 raise AsyncGrizzlySmsException(f"Empty response")
