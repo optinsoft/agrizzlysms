@@ -1,5 +1,6 @@
 from .asyncgrizzlysms import AsyncGrizzlySms, AsyncGrizzlySmsException, NoSMSException
 from typing import Coroutine
+import logging
 
 async def testApi(apiName: str, apiRoutine: Coroutine):
     print(apiName)
@@ -14,7 +15,19 @@ async def testApi(apiName: str, apiRoutine: Coroutine):
     return None
 
 async def testAsyncGrizzlySms(apiKey: str):
-    agrizzlysms = AsyncGrizzlySms(apiKey)
+    logger = logging.Logger('testgrizzlysms')
+
+    logger.setLevel(logging.DEBUG)
+
+    log_format = "%(asctime)s [%(levelname)s] %(message)s"
+    log_path = './log/test.log'
+
+    logFormatter = logging.Formatter(log_format)
+    fileHandler = logging.FileHandler(log_path)
+    fileHandler.setFormatter(logFormatter)
+    logger.addHandler(fileHandler)
+
+    agrizzlysms = AsyncGrizzlySms(apiKey, logger=logger)
 
     print('--- agrizzlysms test ---')
 

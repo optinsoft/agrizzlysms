@@ -3,6 +3,8 @@ import ssl
 import certifi
 import json
 from urllib.parse import urlencode
+import logging
+from functools import reduce
 
 class AsyncGrizzlySmsException(Exception):
     pass
@@ -14,7 +16,8 @@ class EarlyCancelException(AsyncGrizzlySmsException):
     pass
 
 class AsyncGrizzlySms:
-    def __init__(self, apiKey: str, apiUrl: str = 'https://api.grizzlysms.com/stubs/handler_api.php'):
+    def __init__(self, apiKey: str, apiUrl: str = 'https://api.grizzlysms.com/stubs/handler_api.php', logger: logging.Logger = None):
+        self.logger = logger
         self.apiKey = apiKey
         self.apiUrl = apiUrl
         self.iso_country_dict = {
@@ -90,64 +93,79 @@ class AsyncGrizzlySms:
                 raise AsyncGrizzlySmsException(f"Empty response")
         return respList
 
-    async def doListRequest(self, url: str, successCode: str = 'ACCESS_', noSmsCode: str = ''):
+    def logRequest(self, query, response: dict):
+        if not self.logger is None:
+            def escapeString(s):
+                return s.replace('\\','\\\\').replace('"', '\\"').replace("\r",'\\r').replace("\n","\\n")
+            self.logger.debug(
+                'query: {'+reduce(lambda x,y: (x+', ' if len(x) > 0 else '')+y+':"'+('*...*' if y== 'api_key' else escapeString(query[y]))+'"', query.keys(),'')+'}'+
+                ', response {'+reduce(lambda x,y: (x+', ' if len(x) > 0 else '')+y+':"'+escapeString(str(response[y]))+'"', response.keys(),'')+'}'
+            )
+
+    async def doListRequest(self, query: dict, successCode: str = 'ACCESS_', noSmsCode: str = ''):
+        url = self.apiUrl + '?' + urlencode(query)
         ssl_context = ssl.create_default_context(cafile=certifi.where())
         conn = aiohttp.TCPConnector(ssl=ssl_context)
         async with aiohttp.ClientSession(connector=conn, raise_for_status=False) as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
                     respText = await resp.text()
+                    self.logRequest(query, {'status':resp.status,'text':respText})
                     raise AsyncGrizzlySmsException(f"Request failed:\nStatus Code: {resp.status}\nText: {respText}")
                 try:
                     respText = await resp.text()
+                    self.logRequest(query, {'status':resp.status,'text':respText})
                     respList = respText.split(':')
                 except ValueError as e:
                     raise AsyncGrizzlySmsException(f"Request failed: {str(e)}")
                 return self.checkResponse(respList, successCode, noSmsCode)
 
-    async def doJsonRequest(self, url: str):
+    async def doJsonRequest(self, query: dict):
+        url = self.apiUrl + '?' + urlencode(query)
         ssl_context = ssl.create_default_context(cafile=certifi.where())
         conn = aiohttp.TCPConnector(ssl=ssl_context)
         async with aiohttp.ClientSession(connector=conn, raise_for_status=False) as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
                     respText = await resp.text()
+                    self.logRequest(query, {'status':resp.status,'text':respText})
                     raise AsyncGrizzlySmsException(f"Request failed:\nStatus Code: {resp.status}\nText: {respText}")
                 try:
                     respText = await resp.text()
+                    self.logRequest(query, {'status':resp.status,'text':respText})
                     respJson = json.loads(respText)
                 except ValueError as e:
                     raise AsyncGrizzlySmsException(f"Request failed: {str(e)}")
                 return respJson
 
     async def getNumber(self, service: str, country_code: str):
-        url = self.apiUrl + '?' + urlencode({'action':'getNumber','service':service,'api_key':self.apiKey,'country':country_code})
-        respList = await self.doListRequest(url, 'ACCESS_NUMBER')
+        query = {'action':'getNumber','service':service,'api_key':self.apiKey,'country':country_code}
+        respList = await self.doListRequest(query, 'ACCESS_NUMBER')
         return {"response": 1, "id": respList[1], "number": respList[2]}
 
     async def setStatus(self, status: str, id: str):
-        url = self.apiUrl + '?' + urlencode({'action':'setStatus','status':status,'id':id,'api_key':self.apiKey})
-        respList = await self.doListRequest(url)
+        query = {'action':'setStatus','status':status,'id':id,'api_key':self.apiKey}
+        respList = await self.doListRequest(query)
         return {"response": 1, "text": ":".join(respList)}
     
     async def getStatus(self, id: str):
-        url = self.apiUrl + '?' + urlencode({'action':'getStatus','id':id,'api_key':self.apiKey})
-        respList = await self.doListRequest(url)
+        query = {'action':'getStatus','id':id,'api_key':self.apiKey}
+        respList = await self.doListRequest(query)
         return {"response": 1, "status": ":".join(respList)}
     
     async def getSMS(self, id: str):
-        url = self.apiUrl + '?' + urlencode({'action':'getStatus','id':id,'api_key':self.apiKey})
-        respList = await self.doListRequest(url, 'STATUS_OK', 'STATUS_WAIT_CODE')
+        query = {'action':'getStatus','id':id,'api_key':self.apiKey}
+        respList = await self.doListRequest(query, 'STATUS_OK', 'STATUS_WAIT_CODE')
         return {"response": 1, "sms": respList[1]}
 
     async def getBalance(self):
-        url = self.apiUrl + '?' + urlencode({'action':'getBalance','api_key':self.apiKey})
-        respList = await self.doListRequest(url)
+        query = {'action':'getBalance','api_key':self.apiKey}
+        respList = await self.doListRequest(query)
         return {"response": 1, "amount": respList[1]}
     
     async def getPrices(self, service: str, country_code: str):
-        url = self.apiUrl + '?' + urlencode({'action':'getPrices','service':service,'api_key':self.apiKey,'country':country_code})
-        respJson = await self.doJsonRequest(url)
+        query = {'action':'getPrices','service':service,'api_key':self.apiKey,'country':country_code}
+        respJson = await self.doJsonRequest(query)
         return {"response": 1, "prices":respJson}
 
     def getCountryCode(self, iso_country: str):

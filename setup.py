@@ -1,7 +1,11 @@
 from distutils.core import setup
+import re
+
+s = open('agrizzlysms/version.py').read()
+v = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", s, re.M).group(1)
 
 setup(name='agrizzlysms',
-    version='1.4',
+    version=v,
     description='Async API wrapper for grizzlysms',
     install_requires=["aiohttp","certifi"],
     author='optinsoft',
