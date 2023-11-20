@@ -16,10 +16,11 @@ class EarlyCancelException(AsyncGrizzlySmsException):
     pass
 
 class AsyncGrizzlySms:
-    def __init__(self, apiKey: str, apiUrl: str = 'https://api.grizzlysms.com/stubs/handler_api.php', logger: logging.Logger = None):
+    def __init__(self, apiKey: str, apiUrl: str = 'https://api.grizzlysms.com/stubs/handler_api.php', logger: logging.Logger = None, http_timeout: int = 15):
         self.logger = logger
         self.apiKey = apiKey
         self.apiUrl = apiUrl
+        self.http_timeout = http_timeout
         self.iso_country_dict = {
             "AF":"74", "AL":"155", "DZ":"58", "AO":"76",
             "AI":"181", "AG":"169", "AR":"39", "AM":"148",
@@ -70,6 +71,9 @@ class AsyncGrizzlySms:
             "UY":"156", "UZ":"40", "VE":"70", "VN":"10",
             "YE":"30", "ZM":"147", "ZW":"96"            
         }
+        self.country_iso_dict = {}
+        for item in self.iso_country_dict.items(): 
+            self.country_iso_dict[item[1]] = item[0]
 
     def checkResponse(self, respList: list, successCode: str, noSmsCode: str):
         if len(successCode) > 0:
@@ -106,8 +110,8 @@ class AsyncGrizzlySms:
         url = self.apiUrl + '?' + urlencode(query)
         ssl_context = ssl.create_default_context(cafile=certifi.where())
         conn = aiohttp.TCPConnector(ssl=ssl_context)
-        async with aiohttp.ClientSession(connector=conn, raise_for_status=False) as session:
-            async with session.get(url) as resp:
+        async with aiohttp.ClientSession(connector=conn, raise_for_status=False, timeout=aiohttp.ClientTimeout(total=self.http_timeout)) as session:
+            async with session.get(url, timeout=self.http_timeout) as resp:
                 if resp.status != 200:
                     respText = await resp.text()
                     self.logRequest(query, {'status':resp.status,'text':respText})
@@ -124,8 +128,8 @@ class AsyncGrizzlySms:
         url = self.apiUrl + '?' + urlencode(query)
         ssl_context = ssl.create_default_context(cafile=certifi.where())
         conn = aiohttp.TCPConnector(ssl=ssl_context)
-        async with aiohttp.ClientSession(connector=conn, raise_for_status=False) as session:
-            async with session.get(url) as resp:
+        async with aiohttp.ClientSession(connector=conn, raise_for_status=False, timeout=aiohttp.ClientTimeout(total=self.http_timeout)) as session:
+            async with session.get(url, timeout=self.http_timeout) as resp:
                 if resp.status != 200:
                     respText = await resp.text()
                     self.logRequest(query, {'status':resp.status,'text':respText})
@@ -171,3 +175,5 @@ class AsyncGrizzlySms:
     def getCountryCode(self, iso_country: str):
         return self.iso_country_dict[iso_country]
     
+    def getIsoCountry(self, country_code: str, default: str):
+        return self.country_iso_dict.get(country_code, default)
