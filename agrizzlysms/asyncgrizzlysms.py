@@ -15,6 +15,9 @@ class NoSMSException(AsyncGrizzlySmsException):
 class EarlyCancelException(AsyncGrizzlySmsException):
     pass
 
+class BannedException(AsyncGrizzlySmsException):
+    pass
+
 class AsyncGrizzlySms:
     def __init__(self, apiKey: str, apiUrl: str = 'https://api.grizzlysms.com/stubs/handler_api.php', logger: logging.Logger = None, http_timeout: int = 15):
         self.logger = logger
@@ -85,6 +88,8 @@ class AsyncGrizzlySms:
                             raise NoSMSException("No SMS")
                         if "EARLY_CANCEL_DENIED" == code:
                             raise EarlyCancelException("Yearly cancel denied")
+                        if "BANNED" == code:
+                            raise BannedException(f'Banned {":".join(respList[1:])}')
                         raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')
                 else:
                     if code != successCode:
@@ -92,6 +97,8 @@ class AsyncGrizzlySms:
                             raise NoSMSException("No SMS")
                         if "EARLY_CANCEL_DENIED" == code:
                             raise EarlyCancelException("Yearly cancel denied")
+                        if "BANNED" == code:
+                            raise BannedException(f'Banned {":".join(respList[1:])}')                        
                         raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')
             else:
                 raise AsyncGrizzlySmsException(f"Empty response")
