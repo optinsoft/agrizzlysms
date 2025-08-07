@@ -1,6 +1,7 @@
 from .asyncgrizzlysms import AsyncGrizzlySms, AsyncGrizzlySmsException, NoSMSException
 from typing import Coroutine
 import logging
+from aiohttp.typedefs import StrOrURL
 
 async def testApi(apiName: str, apiRoutine: Coroutine):
     print(apiName)
@@ -14,7 +15,7 @@ async def testApi(apiName: str, apiRoutine: Coroutine):
         print("AsyncGrizzlySmsException:", e)
     return None
 
-async def testAsyncGrizzlySms(apiKey: str):
+async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None):
     logger = logging.Logger('testgrizzlysms')
 
     logger.setLevel(logging.DEBUG)
@@ -27,16 +28,15 @@ async def testAsyncGrizzlySms(apiKey: str):
     fileHandler.setFormatter(logFormatter)
     logger.addHandler(fileHandler)
 
-    agrizzlysms = AsyncGrizzlySms(apiKey, logger=logger)
+    agrizzlysms = AsyncGrizzlySms(apiKey, logger=logger, http_proxy=httpProxy)
 
     print('--- agrizzlysms test ---')
 
     await testApi('getBalance', agrizzlysms.getBalance())
-    await testApi('getPrices', agrizzlysms.getPrices('mm','0'))
-    cc = agrizzlysms.getCountryCode('RU')
+    cc = agrizzlysms.getCountryCode('US')
+    await testApi('getPrices', agrizzlysms.getPrices('mm',cc))
     number = await testApi('getNumber', agrizzlysms.getNumber('mm',cc))
     if number:
-        print(number)    
         await testApi('getSMS', agrizzlysms.getSMS(number['id']))
         await testApi('setStatus', agrizzlysms.setStatus('8', number['id']))
 
