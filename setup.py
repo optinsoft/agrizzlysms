@@ -7,7 +7,7 @@ v = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", s, re.M).group(1)
 setup(name='agrizzlysms',
     version=v,
     description='Async API wrapper for grizzlysms',
-    install_requires=["aiohttp","certifi"],
+    install_requires=["aiohttp","certifi","aiohttp-socks"],
     author='optinsoft',
     author_email='optinsoft@gmail.com',
     keywords=['grizzlysms','sms','async'],
