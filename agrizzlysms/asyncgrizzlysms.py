@@ -16,6 +16,12 @@ class NoSMSException(AsyncGrizzlySmsException):
 class EarlyCancelException(AsyncGrizzlySmsException):
     pass
 
+class NoNumbersException(AsyncGrizzlySmsException):
+    pass
+
+class WrongMaxPriceException(AsyncGrizzlySmsException):
+    pass
+
 class BannedException(AsyncGrizzlySmsException):
     pass
 
@@ -92,6 +98,10 @@ class AsyncGrizzlySms:
                             raise NoSMSException("No SMS")
                         if "EARLY_CANCEL_DENIED" == code:
                             raise EarlyCancelException("Yearly cancel denied")
+                        if "NO_NUMBERS" == code:
+                            raise NoNumbersException("No numbers")
+                        if "WRONG_MAX_PRICE" == code:
+                            raise WrongMaxPriceException(f'Wrong max. price {":".join(respList[1:])}')                        
                         if "BANNED" == code:
                             raise BannedException(f'Banned {":".join(respList[1:])}')
                         raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')
@@ -101,6 +111,10 @@ class AsyncGrizzlySms:
                             raise NoSMSException("No SMS")
                         if "EARLY_CANCEL_DENIED" == code:
                             raise EarlyCancelException("Yearly cancel denied")
+                        if "NO_NUMBERS" == code:
+                            raise NoNumbersException("No numbers")
+                        if "WRONG_MAX_PRICE" == code:
+                            raise WrongMaxPriceException(f'Wrong max. price {":".join(respList[1:])}')
                         if "BANNED" == code:
                             raise BannedException(f'Banned {":".join(respList[1:])}')                        
                         raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')

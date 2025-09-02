@@ -1,4 +1,4 @@
-from .asyncgrizzlysms import AsyncGrizzlySms, AsyncGrizzlySmsException, NoSMSException
+from .asyncgrizzlysms import AsyncGrizzlySms, AsyncGrizzlySmsException, NoSMSException, NoNumbersException, WrongMaxPriceException
 from typing import Coroutine
 import logging
 from aiohttp.typedefs import StrOrURL
@@ -11,6 +11,10 @@ async def testApi(apiName: str, apiRoutine: Coroutine):
         return response
     except NoSMSException:
         print("No SMS")
+    except NoNumbersException:
+        print("No numbers")
+    except WrongMaxPriceException as e:
+        print("WrongMaxPriceException:", e)
     except AsyncGrizzlySmsException as e:
         print("AsyncGrizzlySmsException:", e)
     return None
