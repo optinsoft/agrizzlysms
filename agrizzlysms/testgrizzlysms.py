@@ -28,14 +28,14 @@ async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None):
     fileHandler.setFormatter(logFormatter)
     logger.addHandler(fileHandler)
 
-    agrizzlysms = AsyncGrizzlySms(apiKey, logger=logger, http_proxy=httpProxy)
+    agrizzlysms = AsyncGrizzlySms(apiKey, logger=logger, http_or_socks_proxy=httpProxy)
 
     print('--- agrizzlysms test ---')
 
     await testApi('getBalance', agrizzlysms.getBalance())
     cc = agrizzlysms.getCountryCode('US')
     await testApi('getPrices', agrizzlysms.getPrices('mm',cc))
-    number = await testApi('getNumber', agrizzlysms.getNumber('mm',cc))
+    number = await testApi('getNumber', agrizzlysms.getNumber('mm',cc,0.08))
     if number:
         await testApi('getSMS', agrizzlysms.getSMS(number['id']))
         await testApi('setStatus', agrizzlysms.setStatus('8', number['id']))
