@@ -25,6 +25,9 @@ class WrongMaxPriceException(AsyncGrizzlySmsException):
 class BannedException(AsyncGrizzlySmsException):
     pass
 
+class CanceledException(AsyncGrizzlySmsException):
+    pass
+
 class AsyncGrizzlySms:
     def __init__(self, apiKey: str, apiUrl: str = 'https://api.grizzlysms.com/stubs/handler_api.php', logger: logging.Logger = None, http_timeout: int = 15,
                  http_or_socks_proxy: aiohttp.typedefs.StrOrURL = None):
@@ -104,6 +107,8 @@ class AsyncGrizzlySms:
                             raise WrongMaxPriceException(f'Wrong max. price {":".join(respList[1:])}')                        
                         if "BANNED" == code:
                             raise BannedException(f'Banned {":".join(respList[1:])}')
+                        if "STATUS_CANCEL" == code:
+                            raise CanceledException('Canceled')
                         raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')
                 else:
                     if code != successCode:
@@ -117,6 +122,8 @@ class AsyncGrizzlySms:
                             raise WrongMaxPriceException(f'Wrong max. price {":".join(respList[1:])}')
                         if "BANNED" == code:
                             raise BannedException(f'Banned {":".join(respList[1:])}')                        
+                        if "STATUS_CANCEL" == code:
+                            raise CanceledException('Canceled')
                         raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')
             else:
                 raise AsyncGrizzlySmsException(f"Empty response")
