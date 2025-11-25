@@ -2,6 +2,7 @@ from .asyncgrizzlysms import AsyncGrizzlySms, AsyncGrizzlySmsException, NoSMSExc
 from typing import Coroutine
 import logging
 from aiohttp.typedefs import StrOrURL
+import sys
 
 async def testApi(apiName: str, apiRoutine: Coroutine):
     print(apiName)
@@ -19,7 +20,7 @@ async def testApi(apiName: str, apiRoutine: Coroutine):
         print("AsyncGrizzlySmsException:", e)
     return None
 
-async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None):
+async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None, connectionErrorRetries: int = 0):
     logger = logging.Logger('testgrizzlysms')
 
     logger.setLevel(logging.DEBUG)
@@ -28,11 +29,11 @@ async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None):
     log_path = './log/test.log'
 
     logFormatter = logging.Formatter(log_format)
-    fileHandler = logging.FileHandler(log_path)
+    fileHandler = logging.FileHandler(log_path, encoding='utf8')
     fileHandler.setFormatter(logFormatter)
     logger.addHandler(fileHandler)
 
-    agrizzlysms = AsyncGrizzlySms(apiKey, logger=logger, http_or_socks_proxy=httpProxy)
+    agrizzlysms = AsyncGrizzlySms(apiKey, logger=logger, http_or_socks_proxy=httpProxy, connection_error_retries=connectionErrorRetries)
 
     print('--- agrizzlysms test ---')
 
