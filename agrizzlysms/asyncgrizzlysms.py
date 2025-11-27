@@ -155,7 +155,7 @@ class AsyncGrizzlySms:
                     if retry_num <= self.connection_error_retries:
                         retry = True
                         if not self.logger is None:
-                            self.logger.warning(f"[AsyncGrizzlySms.doJsonRequest] {type(e).__name__}: {str(e)}")
+                            self.logger.warning(f"[AsyncGrizzlySms] {type(e).__name__}: {str(e)}")
                     else:
                         raise
         return wrapper

@@ -20,7 +20,8 @@ async def testApi(apiName: str, apiRoutine: Coroutine):
         print("AsyncGrizzlySmsException:", e)
     return None
 
-async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None, connectionErrorRetries: int = 0):
+async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None, connectionErrorRetries: int = 0,
+                              country: str = 'US', service: str = 'mm', max_price: float = 0.08):
     logger = logging.Logger('testgrizzlysms')
 
     logger.setLevel(logging.DEBUG)
@@ -38,9 +39,9 @@ async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None, connectio
     print('--- agrizzlysms test ---')
 
     await testApi('getBalance', agrizzlysms.getBalance())
-    cc = agrizzlysms.getCountryCode('US')
-    await testApi('getPrices', agrizzlysms.getPrices('mm',cc))
-    number = await testApi('getNumber', agrizzlysms.getNumber('mm',cc,0.08))
+    cc = agrizzlysms.getCountryCode(country)
+    await testApi('getPrices', agrizzlysms.getPrices(service,cc))
+    number = await testApi('getNumber', agrizzlysms.getNumber(service,cc,str(max_price)))
     if number:
         await testApi('getSMS', agrizzlysms.getSMS(number['id']))
         await testApi('setStatus', agrizzlysms.setStatus('8', number['id']))
