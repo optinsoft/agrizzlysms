@@ -21,7 +21,8 @@ async def testApi(apiName: str, apiRoutine: Coroutine):
     return None
 
 async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None, connectionErrorRetries: int = 0,
-                              country: str = 'US', service: str = 'mm', max_price: float = 0.08):
+                              country: str = 'US', service: str = 'mm', max_price: float = 0.08,
+                              provider_ids: str = '', except_provider_ids: str = ''):
     logger = logging.Logger('testgrizzlysms')
 
     logger.setLevel(logging.DEBUG)
@@ -41,7 +42,7 @@ async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None, connectio
     await testApi('getBalance', agrizzlysms.getBalance())
     cc = agrizzlysms.getCountryCode(country)
     await testApi('getPrices', agrizzlysms.getPrices(service,cc))
-    number = await testApi('getNumber', agrizzlysms.getNumber(service,cc,str(max_price)))
+    number = await testApi('getNumber', agrizzlysms.getNumber(service,cc,str(max_price),provider_ids,except_provider_ids))
     if number:
         await testApi('getSMS', agrizzlysms.getSMS(number['id']))
         await testApi('setStatus', agrizzlysms.setStatus('8', number['id']))

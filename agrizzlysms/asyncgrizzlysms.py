@@ -198,10 +198,15 @@ class AsyncGrizzlySms:
                     raise AsyncGrizzlySmsException(f"Request failed: {str(e)}")
                 return respJson
 
-    async def getNumber(self, service: str, country_code: str, max_price: str = ''):
+    async def getNumber(self, service: str, country_code: str, max_price: str = '', 
+                        provider_ids: str = '', except_provider_ids: str = ''):
         query = {'api_key':self.apiKey,'action':'getNumber','service':service,'country':country_code}
         if max_price:
             query['maxPrice'] = str(max_price)
+        if provider_ids:
+            query['providerIds'] = provider_ids
+        if except_provider_ids:
+            query['exceptProviderIds'] = except_provider_ids
         respList = await self.doListRequest(query, 'ACCESS_NUMBER')
         return {"response": 1, "id": respList[1], "number": respList[2]}
 
