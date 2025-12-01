@@ -42,7 +42,7 @@ async def testAsyncGrizzlySms(apiKey: str, httpProxy: StrOrURL = None, connectio
     await testApi('getBalance', agrizzlysms.getBalance())
     cc = agrizzlysms.getCountryCode(country)
     await testApi('getPrices', agrizzlysms.getPrices(service,cc))
-    number = await testApi('getNumber', agrizzlysms.getNumber(service,cc,str(max_price),provider_ids,except_provider_ids))
+    number = await testApi('getNumberV2', agrizzlysms.getNumberV2(service,cc,str(max_price),provider_ids,except_provider_ids))
     if number:
         await testApi('getSMS', agrizzlysms.getSMS(number['id']))
         await testApi('setStatus', agrizzlysms.setStatus('8', number['id']))

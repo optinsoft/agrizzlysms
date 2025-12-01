@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import logging
 from functools import reduce, wraps
 from aiohttp_socks import ProxyConnector
+import re
 
 class AsyncGrizzlySmsException(Exception):
     pass
@@ -92,40 +93,33 @@ class AsyncGrizzlySms:
         for item in self.iso_country_dict.items(): 
             self.country_iso_dict[item[1]] = item[0]
 
-    def checkResponse(self, respList: list, successCode: str, noSmsCode: str):
+    @staticmethod
+    def raiseGrizzlySmsException(code: str, respList: list = [], noSmsCode: str = ''):
+        if len(noSmsCode) > 0 and code == noSmsCode:
+            raise NoSMSException("No SMS")
+        if "EARLY_CANCEL_DENIED" == code:
+            raise EarlyCancelException("Yearly cancel denied")
+        if "NO_NUMBERS" == code:
+            raise NoNumbersException("No numbers")
+        if "WRONG_MAX_PRICE" == code:
+            raise WrongMaxPriceException(f'Wrong max. price {":".join(respList[1:])}')                        
+        if "BANNED" == code:
+            raise BannedException(f'Banned {":".join(respList[1:])}')
+        if "STATUS_CANCEL" == code:
+            raise CanceledException('Canceled')
+        raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')
+
+    @staticmethod
+    def checkResponse(respList: list, successCode: str, noSmsCode: str):
         if len(successCode) > 0:
             if len(respList) > 0:            
                 code = respList[0]
                 if successCode.endswith('_'):
                     if not code.startswith(successCode):
-                        if len(noSmsCode) > 0 and code == noSmsCode:
-                            raise NoSMSException("No SMS")
-                        if "EARLY_CANCEL_DENIED" == code:
-                            raise EarlyCancelException("Yearly cancel denied")
-                        if "NO_NUMBERS" == code:
-                            raise NoNumbersException("No numbers")
-                        if "WRONG_MAX_PRICE" == code:
-                            raise WrongMaxPriceException(f'Wrong max. price {":".join(respList[1:])}')                        
-                        if "BANNED" == code:
-                            raise BannedException(f'Banned {":".join(respList[1:])}')
-                        if "STATUS_CANCEL" == code:
-                            raise CanceledException('Canceled')
-                        raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')
+                        AsyncGrizzlySms.raiseGrizzlySmsException(code, respList, noSmsCode)
                 else:
                     if code != successCode:
-                        if len(noSmsCode) > 0 and code == noSmsCode:
-                            raise NoSMSException("No SMS")
-                        if "EARLY_CANCEL_DENIED" == code:
-                            raise EarlyCancelException("Yearly cancel denied")
-                        if "NO_NUMBERS" == code:
-                            raise NoNumbersException("No numbers")
-                        if "WRONG_MAX_PRICE" == code:
-                            raise WrongMaxPriceException(f'Wrong max. price {":".join(respList[1:])}')
-                        if "BANNED" == code:
-                            raise BannedException(f'Banned {":".join(respList[1:])}')                        
-                        if "STATUS_CANCEL" == code:
-                            raise CanceledException('Canceled')
-                        raise AsyncGrizzlySmsException(f'Error "{code}": {":".join(respList)}')
+                        AsyncGrizzlySms.raiseGrizzlySmsException(code, respList, noSmsCode)
             else:
                 raise AsyncGrizzlySmsException(f"Empty response")
         return respList
@@ -135,7 +129,7 @@ class AsyncGrizzlySms:
             def escapeString(s):
                 return s.replace('\\','\\\\').replace('"', '\\"').replace("\r",'\\r').replace("\n","\\n")
             self.logger.debug(
-                'query: {'+reduce(lambda x,y: (x+', ' if len(x) > 0 else '')+y+':"'+('*...*' if y== 'api_key' else escapeString(query[y]))+'"', query.keys(),'')+'}'+
+                'query: {'+reduce(lambda x,y: (x+', ' if len(x) > 0 else '')+y+':"'+('*...*' if y== 'api_key' else escapeString(str(query[y])))+'"', query.keys(),'')+'}'+
                 ', response {'+reduce(lambda x,y: (x+', ' if len(x) > 0 else '')+y+':"'+escapeString(str(response[y]))+'"', response.keys(),'')+'}'
             )
 
@@ -177,7 +171,7 @@ class AsyncGrizzlySms:
                     respList = respText.split(':')
                 except ValueError as e:
                     raise AsyncGrizzlySmsException(f"Request failed: {str(e)}")
-                return self.checkResponse(respList, successCode, noSmsCode)
+                return AsyncGrizzlySms.checkResponse(respList, successCode, noSmsCode)
 
     @async_connection_retry
     async def doJsonRequest(self, query: dict):
@@ -193,12 +187,15 @@ class AsyncGrizzlySms:
                 try:
                     respText = await resp.text()
                     self.logRequest(query, {'status':resp.status,'text':respText})
+                    if re.match(r'^[A-Z_]+(:|$)', respText):
+                        respList = respText.split(':')
+                        AsyncGrizzlySms.raiseGrizzlySmsException(respList[0], respList)
                     respJson = json.loads(respText)
                 except ValueError as e:
                     raise AsyncGrizzlySmsException(f"Request failed: {str(e)}")
                 return respJson
 
-    async def getNumber(self, service: str, country_code: str, max_price: str = '', 
+    async def getNumber(self, service: str, country_code: str, max_price: str = '',
                         provider_ids: str = '', except_provider_ids: str = ''):
         query = {'api_key':self.apiKey,'action':'getNumber','service':service,'country':country_code}
         if max_price:
@@ -209,6 +206,18 @@ class AsyncGrizzlySms:
             query['exceptProviderIds'] = except_provider_ids
         respList = await self.doListRequest(query, 'ACCESS_NUMBER')
         return {"response": 1, "id": respList[1], "number": respList[2]}
+    
+    async def getNumberV2(self, service: str, country_code: str, max_price: str = '',
+                        provider_ids: str = '', except_provider_ids: str = ''):
+        query = {'api_key':self.apiKey,'action':'getNumberV2','service':service,'country':country_code}
+        if max_price:
+            query['maxPrice'] = str(max_price)
+        if provider_ids:
+            query['providerIds'] = provider_ids
+        if except_provider_ids:
+            query['exceptProviderIds'] = except_provider_ids
+        respLJson = await self.doJsonRequest(query)
+        return {"response": 1, "id": respLJson['activationId'], "number": respLJson['phoneNumber'], **respLJson}
 
     async def setStatus(self, status: str, id: str):
         query = {'api_key':self.apiKey,'action':'setStatus','status':status,'id':id}
